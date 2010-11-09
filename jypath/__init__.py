@@ -1,6 +1,3 @@
-import json
-import yaml
-
 #TODO: Token class to handle filters and other node selectors
 #class Token:
 #	pass
@@ -112,24 +109,34 @@ class BasePath (object):
 
 		return result
 
-class JPath (BasePath):
-	def __init__(self, jsonstr):		
-		if not isinstance(jsonstr, str):
-			raise ValueError
-		super(JPath, self).__init__(json.loads (jsonstr))
+try:
+	import json
+	class JPath (BasePath):
+		def __init__(self, jsonstr):		
+			if not isinstance(jsonstr, str):
+				raise ValueError
+			super(JPath, self).__init__(json.loads (jsonstr))
+except:
+	pass
 
-class YPath (BasePath):
-	def __init__(self, yamlstr):
-		if not isinstance(yamlstr, str):
-			raise ValueError
-		super(YPath, self).__init__(yaml.load (yamlstr))
+try:
+	import yaml
+	class YPath (BasePath):
+		def __init__(self, yamlstr):
+			if not isinstance(yamlstr, str):
+				raise ValueError
+			super(YPath, self).__init__(yaml.load (yamlstr))
+except:
+	pass
 
 if __name__ == '__main__':
 	bp = BasePath ({'a': [{'b': {'x': {'x': {'x': True}}}},{'b': True, 'c': False},{'b': "foo"}]})
 	print bp.query ('/a/*/*')
 	print bp.query ('a//x')
 	print bp.query ('a//b')
-	yp = YPath ("a: [1,2,3]")
-	print yp.query ("/a")
-	jp = JPath ("{\"a\": [1,2,3,true,\"foo\"]}")
-	print jp.query ("/a")
+	if 'yaml' in globals():
+		yp = YPath ("a: [1,2,3]")
+		print yp.query ("/a")
+	if 'json' in globals():
+		jp = JPath ("{\"a\": [1,2,3,true,\"foo\"]}")
+		print jp.query ("/a")
