@@ -66,7 +66,7 @@ class BasePath:
 		for i in self._find_key (self._root, self._query[0][0]):
 			if len(self._query[0]) > 1:
 				result.extend (self._subquery (i, self._query[0][1:]))
-			else:
+			elif i:
 				result.append (i)
 		
 		return result
@@ -80,37 +80,43 @@ class BasePath:
 			if len(query) > 1:
 				result.extend (self._subquery (i, query[1:]))
 			else:
-				result.append (i)
+					result.append (i)
 		return result
 	
 	def _subquery (self, obj, keys):
 		if len(keys) < 1:
-			return
+			return []
 		if len(keys) == 1:
 			return self._find_key (obj, keys[0])
 		
 		result = []
 		for i in self._find_key (obj, keys[0]):
-			result.append (self._subquery (i, keys[1:]))
+			result.extend (self._subquery (i, keys[1:]))
+
 		
 		return result
 
 	def _find_key (self, obj, key, recursive=False):
 		result = []
 		if isinstance (obj, dict):
-			if key in obj.keys():
+			if key == "*":
+				for k in obj.keys ():
+					result.append (obj[k])
+			elif key in obj.keys():
 				result.append(obj[key])
 			if recursive:
 				for k in obj.keys():
 					result.extend (self._find_key (obj[k], key, True))
 		elif isinstance (obj, list):
+			if key == "*":
+				result.extend (obj)
 			if recursive:
 				for i in obj:
 					result.extend(self._find_key (i, key, recursive))
-		
+
 		return result
 
 
 if __name__ == '__main__':
-	bp = BasePath ({'a': [{'b': {'x': {'x': {'x': True}}}},{'c': True},{'d': "foo"}]})
-	print bp.query ('/a//b/x/x')
+	bp = BasePath ({'a': [{'b': {'x': {'x': {'x': True}}}},{'b': True, 'c': False},{'b': "foo"}]})
+	print bp.query ('/a/*/*')
