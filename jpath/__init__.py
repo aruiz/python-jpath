@@ -1,13 +1,9 @@
 import json
 import yaml
 
-#class JPath:
-#	def __init__(self, json):
-
-
-#class YPath (BasePath):
-#	def __init__(self, yaml):
-		
+#TODO: Token class to handle filters and other node selectors
+#class Token:
+#	pass
 
 class Query(list):
 	def __init__ (self, query):
@@ -30,7 +26,7 @@ class Query(list):
 
 			self.append ([j for j in i.split ('/') if j])
 
-class BasePath:
+class BasePath (object):
 	def __init__ (self, obj):
 		self._root = obj
 		self._from_root = False
@@ -116,8 +112,24 @@ class BasePath:
 
 		return result
 
+class JPath (BasePath):
+	def __init__(self, jsonstr):		
+		if not isinstance(jsonstr, str):
+			raise ValueError
+		super(JPath, self).__init__(json.loads (jsonstr))
+
+class YPath (BasePath):
+	def __init__(self, yamlstr):
+		if not isinstance(yamlstr, str):
+			raise ValueError
+		super(YPath, self).__init__(yaml.load (yamlstr))
 
 if __name__ == '__main__':
 	bp = BasePath ({'a': [{'b': {'x': {'x': {'x': True}}}},{'b': True, 'c': False},{'b': "foo"}]})
 	print bp.query ('/a/*/*')
 	print bp.query ('a//x')
+	print bp.query ('a//b')
+	yp = YPath ("a: [1,2,3]")
+	print yp.query ("/a")
+	jp = JPath ("{\"a\": [1,2,3,true,\"foo\"]}")
+	print jp.query ("/a")
