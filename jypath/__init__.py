@@ -134,13 +134,13 @@ if __name__ == '__main__':
 	print bp.query ('/a/*/*')
 	print bp.query ('a//x')
 	print bp.query ('a//b')
-        try:
+	try:
 		yp = YPath ("a: [1,2,3]")
 		print yp.query ("/a")
-        except NameError:
-            pass
+	except NameError:
+	    pass
 	try:
 		jp = JPath ("{\"a\": [1,2,3,true,\"foo\"]}")
 		print jp.query ("/a")
-        except NameError:
-            pass
+	except NameError:
+	    pass
