@@ -76,11 +76,11 @@ class BasePath:
 		
 		#Recursive search of the first item of the path
 		for i in self._find_key (obj, query[0], True):
-			print i
 			if len(query) > 1:
 				result.extend (self._subquery (i, query[1:]))
 			else:
-					result.append (i)
+				result.append (i)
+		
 		return result
 	
 	def _subquery (self, obj, keys):
@@ -120,3 +120,4 @@ class BasePath:
 if __name__ == '__main__':
 	bp = BasePath ({'a': [{'b': {'x': {'x': {'x': True}}}},{'b': True, 'c': False},{'b': "foo"}]})
 	print bp.query ('/a/*/*')
+	print bp.query ('a//x')
