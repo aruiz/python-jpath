@@ -13,7 +13,7 @@ class Query(list):
 		return self._from_root
 
 	def parse (self, query):
-		if query.startswith ('/'):
+		if query.startswith ('/') and not query.startswith('//'):
 			self._from_root = True
 		else:
 			self._from_root = False
@@ -134,6 +134,7 @@ if __name__ == '__main__':
 	print bp.query ('/a/*/*')
 	print bp.query ('a//x')
 	print bp.query ('a//b')
+	print bp.query ('//x')
 	try:
 		yp = YPath ("a: [1,2,3]")
 		print yp.query ("/a")
