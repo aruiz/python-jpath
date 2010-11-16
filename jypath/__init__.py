@@ -2,17 +2,19 @@
 #class Token:
 #	pass
 
-class Query(list):
+class BaseQuery(list):
 	def __init__ (self, query):
-		super(Query,self).__init__()
+		super(list,self).__init__()
 		if not isinstance(query, str):
 			raise ValueError
-		self.parse (query)
+		self._parse (query)
 		
 	def is_from_root (self):
 		return self._from_root
+	def set_query (self, query):
+		self._parse (query)
 
-	def parse (self, query):
+	def _parse (self, query):
 		if query.startswith ('/') and not query.startswith('//'):
 			self._from_root = True
 		else:
@@ -23,28 +25,18 @@ class Query(list):
 
 			self.append ([j for j in i.split ('/') if j])
 
-class BasePath (object):
-	def __init__ (self, obj):
-		self._root = obj
-		self._from_root = False
-
-	def query (self, query):
-		self._query = Query(query)
-
-		if not self._query:
-			return []
-		
+	def execute (self, obj):
 		prev = []
-		if self._query.is_from_root ():
-			prev.extend(self._execute_query_from_root ())
+		if self.is_from_root ():
+			prev.extend(self._execute_query_from_root (obj))
 		else:
-			prev.extend(self._execute_query (self._root, self._query[0]))
+			prev.extend(self._execute_query (obj, self[0]))
 
 
-		if len(self._query) == 1:
+		if len(self) == 1:
 			return prev
 
-		for subq in self._query [1:]:
+		for subq in self[1:]:
 			tmp = []
 			for obj in prev:
 				tmp.extend (self._execute_query (obj, subq))
@@ -52,13 +44,13 @@ class BasePath (object):
 		
 		return prev		
 
-	def _execute_query_from_root (self):
+	def _execute_query_from_root (self, obj):
 		result = []
 
 		#Non recursive as we start from the root path of the object
-		for i in self._find_key (self._root, self._query[0][0]):
-			if len(self._query[0]) > 1:
-				result.extend (self._subquery (i, self._query[0][1:]))
+		for i in self._find_key (obj, self[0][0]):
+			if len(self[0]) > 1:
+				result.extend (self._subquery (i, self[0][1:]))
 			elif i:
 				result.append (i)
 		
@@ -111,37 +103,40 @@ class BasePath (object):
 
 try:
 	import json
-	class JPath (BasePath):
-		def __init__(self, jsonstr):		
+	class JPathQuery (BaseQuery):
+		def execute(self, jsonstr):
 			if not isinstance(jsonstr, str):
 				raise ValueError
-			super(JPath, self).__init__(json.loads (jsonstr))
+			super(JPath, self).execute(json.loads (jsonstr))
 except:
 	pass
 
 try:
 	import yaml
-	class YPath (BasePath):
-		def __init__(self, yamlstr):
+	class YPathQuery (BaseQuery):
+		def execute(self, yamlstr):
 			if not isinstance(yamlstr, str):
 				raise ValueError
-			super(YPath, self).__init__(yaml.load (yamlstr))
+			super(YPath, self).execute(yaml.load (yamlstr))
 except:
 	pass
 
 if __name__ == '__main__':
-	bp = BasePath ({'a': [{'b': {'x': {'x': {'x': True}}}},{'b': True, 'c': False},{'b': "foo"}]})
-	print bp.query ('/a/*/*')
+	a = {'a': [{'b': {'x': {'x': {'x': True}}}},{'b': True, 'c': False},{'b': "foo"}]}
+	bq = BaseQuery ('/a/*/*')
+	print bq.execute (a)
+	
+"""	print bp.query ('/a/*/*')
 	print bp.query ('a//x')
 	print bp.query ('a//b')
 	print bp.query ('//x')
 	try:
-		yp = YPath ("a: [1,2,3]")
+		yp = YPathQuery ("a: [1,2,3]")
 		print yp.query ("/a")
 	except NameError:
 	    pass
 	try:
-		jp = JPath ("{\"a\": [1,2,3,true,\"foo\"]}")
+		jp = JPathQuery ("{\"a\": [1,2,3,true,\"foo\"]}")
 		print jp.query ("/a")
 	except NameError:
-	    pass
+	    pass"""
