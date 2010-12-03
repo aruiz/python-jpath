@@ -1,6 +1,72 @@
-#TODO: Token class to handle filters and other node selectors
-#class Token:
-#	pass
+import logging
+import re
+
+class Token(object):
+	_filter_re = re.compile ('^(.*)\[(.*)\]$')
+	def __init__ (self, token):
+		super(Token,self).__init__()
+		self._filter = None
+		self._key = None
+		self.set_token (token)
+		
+	def set_token (self, token):
+		match = self._filter_re.match (token)
+		try:
+			self._key, self._filter = match.groups()
+			self._filter = Filter (self._filter)
+		except AttributeError:
+			self._filter = None
+			self._key = token
+
+		self._token = token
+		
+	def is_wildcard (self):
+		return self._key == "*"
+		
+	def get_key (self):
+		return self._key
+		
+	def has_filter (self):
+		return bool(self._filter)
+		
+	def get_filter (self):
+		return self._filter
+		
+	def get_token (self):
+		return self._token
+		
+	def __repr__ (self):
+		return self._token
+		
+	def __str__ (self):
+		return self._token
+		
+	def __eq__ (self, b):
+		if isinstance(b, Token):
+			return self._token == b.get_token ()
+		if isinstance(b, str):
+			return self._token == b
+		
+	def match (self, child):
+		self._filter.match (child)
+
+class Filter(object):
+	def __init__(self, filter_string):
+		super(Filter, self).__init__()
+		self._parse (filter_string)
+		self._filter = filter_string
+		
+	def _parse (self, filter_string):
+		logging.warning ("Method not implemented")
+	
+	def __repr__ (self):
+		return self._filter
+	
+	def __str__ (self):
+		return self.__repr__()
+		
+	def match (self, filter_string):
+		logging.warning ("Method not implemented")
 
 class BaseQuery(list):
 	def __init__ (self, query):
@@ -11,6 +77,7 @@ class BaseQuery(list):
 		
 	def is_from_root (self):
 		return self._from_root
+	
 	def set_query (self, query):
 		self._parse (query)
 
@@ -23,7 +90,7 @@ class BaseQuery(list):
 		for i in query.split('//'):
 			if not i: continue
 
-			self.append ([j for j in i.split ('/') if j])
+			self.append ([Token(key) for key in i.split ('/') if key])
 
 	def execute (self, obj):
 		prev = []
@@ -84,16 +151,24 @@ class BaseQuery(list):
 	def _find_key (self, obj, key, recursive=False):
 		result = []
 		if isinstance (obj, dict):
-			if key == "*":
+			if key.is_wildcard ():
 				for k in obj.keys ():
-					result.append (obj[k])
+					if key.has_filter () and key.get_filter().match (obj[k]):
+						result.append (obj[k])
+					else:
+						result.append (obj[k])
 			elif key in obj.keys():
-				result.append(obj[key])
+				child = obj[str(key)]
+				if key.has_filter () and key.get_filter().match (child):
+					result.append(child)
+				else:
+					result.append(child)
 			if recursive:
 				for k in obj.keys():
 					result.extend (self._find_key (obj[k], key, True))
 		elif isinstance (obj, list):
-			if key == "*":
+			#TODO: Match filters on childs?
+			if key.is_wildcard ():
 				result.extend (obj)
 			if recursive:
 				for i in obj:
@@ -122,21 +197,16 @@ except:
 	pass
 
 if __name__ == '__main__':
-	a = {'a': [{'b': {'x': {'x': {'x': True}}}},{'b': True, 'c': False},{'b': "foo"}]}
-	bq = BaseQuery ('/a/*/*')
-	print bq.execute (a)
-	
-"""	print bp.query ('/a/*/*')
-	print bp.query ('a//x')
-	print bp.query ('a//b')
-	print bp.query ('//x')
+	a = {'a': [{'b': {'x': {'x': {'x': True}}}},{'b': True, 'a': False},{'b': "foo"}]}
+	print BaseQuery ('/a/*/*').execute (a)
+	print BaseQuery ('a//x').execute (a)
+	print BaseQuery ('a//b').execute (a)
+	print BaseQuery ('b').execute (a)	
 	try:
-		yp = YPathQuery ("a: [1,2,3]")
-		print yp.query ("/a")
+		print YPathQuery ("a: [1,2,3]").execute("/a")
 	except NameError:
 	    pass
 	try:
-		jp = JPathQuery ("{\"a\": [1,2,3,true,\"foo\"]}")
-		print jp.query ("/a")
+		print JPathQuery ("{\"a\": [1,2,3,true,\"foo\"]}").execute("/a")
 	except NameError:
-	    pass"""
+	    pass
